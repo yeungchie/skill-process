@@ -2,6 +2,10 @@
 
 外部进程执行命令并接收返回值。
 
+## 项目依赖
+
++ skill-loader [ [GitHub](https://github.com/yeungchie/skill-loader "https://github.com/yeungchie/skill-loader") / [Gitee](https://gitee.com/yeungchie/skill-loader "https://gitee.com/yeungchie/skill-loader") ]
+
 ## cmd
 
 ```text
