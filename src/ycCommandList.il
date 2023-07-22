@@ -4,11 +4,11 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommandList(\@rest cmd "g")
+procedure(ycCommandList(\@key join(" ") \@rest cmd "Sl")
     unless(cmd
         ycError("too few arguments - %A\n" cmd)
     )
-    artSystemWithRead(buildString(mapcar('artMakeString cmd) " "))
+    artSystemWithRead(buildString(mapcar('artMakeString cmd) join))
 )
 
 ; END

@@ -4,12 +4,12 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommand2(\@key row("") type('std) chomp \@rest cmd "Ssgl")
+procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl")
     let((result output)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
-        when(result = apply('ycCommandList2 append(list(?type type) cmd))
+        when(result = apply('ycCommandList2 append(list(?join join ?type type) cmd))
             output = if(type == 'all
                 mapcar(lambda((x) buildString(x row)) result)
                 buildString(result row)

@@ -4,13 +4,13 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommandList2(\@key type('std) \@rest cmd "sl")
+procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
     let((cid stdout errout)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
         cid = ipcBeginProcess(
-            buildString(mapcar('artMakeString cmd) " ")
+            buildString(mapcar('artMakeString cmd) join)
             ""
             lambda((cid data)
                 stdout = cons(data stdout)

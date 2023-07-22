@@ -4,12 +4,12 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommand(\@key row("\n") \@rest cmd "Sl")
+procedure(ycCommand(\@key join(" ") row("\n") \@rest cmd "SSl")
     let((result)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
-        when(result = apply('ycCommandList cmd)
+        when(result = apply('ycCommandList append(list(?join join) cmd))
             buildString(result row)
         )
     )
