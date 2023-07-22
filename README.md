@@ -13,6 +13,7 @@ cmd(
     g_cmd1
     [ g_cmd2 ... ]
     [ ?row  S_row ]
+    [ ?join  S_join ]
 )
 ```
 
@@ -29,6 +30,10 @@ cmd(
     + 指定字符串用于拼接多次获取到的结果。
     + 由于 `cmd()` 无法获取到结尾的换行符，因此这个参数默认值设定为 `"\n"`。
     + 非字符串会被转为字符串。
+    + 类型限制：*string, symbol*
+
+3. `?join` **S_join**
+    + 指定连接多个命令的拼接符。
     + 类型限制：*string, symbol*
 
 ```lisp
@@ -59,6 +64,7 @@ cmd2(
     g_cmd1
     [ g_cmd2 ... ]
     [ ?row  S_row ]
+    [ ?join  S_join ]
     [ ?type  s_type ]
     [ ?chomp  g_chomp ]
 )
@@ -78,13 +84,17 @@ cmd2(
     + 非字符串会被转为字符串。
     + 类型限制：*string, symbol*
 
-3. `?type` **s_type**
+3. `?join` **S_join**
+    + 指定连接多个命令的拼接符。
+    + 类型限制：*string, symbol*
+
+4. `?type` **s_type**
     + 指定需要获取的输出类型，默认为 `'std`，即获取标准输出。
     + 指定 `'err` 则只获取错误输出。
     + 指定 `'all` 则返回一个 *list* 包含所有输出。
     + 类型限制：*symbol*
 
-4. `?chomp` **g_chomp**
+5. `?chomp` **g_chomp**
     + 指定是否需要将每次获取的结果的行尾换行符移除。
     + 默认为 `nil`。如果指定为非 `nil`，这移除行尾换行符。
     + 类型限制：*all*
