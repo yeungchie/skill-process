@@ -9,8 +9,14 @@ procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
+        cmd = buildString(
+            foreach(mapcar x cmd
+                pcreReplace(pcreCompile("[\"]") artMakeString(x) "\\\\\\0" 0)
+            )
+            join
+        )
         cid = ipcBeginProcess(
-            buildString(mapcar('artMakeString cmd) join)
+            cmd
             ""
             lambda((cid data)
                 stdout = cons(data stdout)
