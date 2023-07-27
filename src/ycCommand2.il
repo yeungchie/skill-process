@@ -16,7 +16,7 @@ procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl"
             )
         )
         when(chomp && output
-            output = pcreReplace(pcreCompile("\n$") output "" 0)
+            output = pcreReplace(pcreCompile("\n$") output "" 1)
         )
         output
     )
