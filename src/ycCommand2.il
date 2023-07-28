@@ -16,7 +16,18 @@ procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl"
             )
         )
         when(chomp && output
-            output = pcreReplace(pcreCompile("\n$") output "" 1)
+            output = case(type(output)
+                (list
+                    foreach(mapcar x output
+                        when(x
+                            pcreReplace(pcreCompile("\n$") x "" 1)
+                        )
+                    )
+                )
+                (string
+                    pcreReplace(pcreCompile("\n$") output "" 1)
+                )
+            )
         )
         output
     )
