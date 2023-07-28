@@ -11,8 +11,10 @@ procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl"
         )
         when(result = apply('ycCommandList2 append(list(?join join ?type type) cmd))
             output = if(type == 'all
-                mapcar(lambda((x) buildString(x row)) result)
-                buildString(result row)
+                foreach(mapcar x result
+                    x && buildString(x row)
+                )
+                row && buildString(result row)
             )
         )
         when(chomp && output
