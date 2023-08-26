@@ -5,7 +5,7 @@
 ;--------------------------
 
 procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
-    let((cid stdout errout)
+    let((cid stdout errout status)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
@@ -29,13 +29,15 @@ procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
         when(ipcIsAliveProcess(cid)
             ipcCloseProcess(cid)
         )
+        status = ipcGetExitStatus(cid)
         stdout = reverse(stdout)
         errout = reverse(errout)
         case(type
-            (all  list(stdout errout))
-            (std  stdout)
-            (err  errout)
-            (t    nil)
+            (all    list(stdout errout status))
+            (std    stdout)
+            (err    errout)
+            (status status)
+            (t      nil)
         )
     )
 )

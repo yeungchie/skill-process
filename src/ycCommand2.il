@@ -12,18 +12,16 @@ procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl"
         when(result = apply('ycCommandList2 append(list(?join join ?type type) cmd))
             output = if(type == 'all
                 foreach(mapcar x result
-                    x && buildString(x row)
+                    pairp(x) && buildString(x row) || x
                 )
-                row && buildString(result row)
+                pairp(result) && buildString(result row) || result
             )
         )
         when(chomp && output
             output = case(type(output)
                 (list
                     foreach(mapcar x output
-                        when(x
-                            pcreReplace(pcreCompile("\n$") x "" 1)
-                        )
+                        stringp(x) && pcreReplace(pcreCompile("\n$") x "" 1) || x
                     )
                 )
                 (string
