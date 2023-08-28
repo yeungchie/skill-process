@@ -11,7 +11,7 @@ procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
         )
         cmd = buildString(
             foreach(mapcar x cmd
-                pcreReplace(pcreCompile("[\"]") artMakeString(x) "\\\\\\0" 0)
+                pcreReplace(pcreCompile("[\"\\$]") artMakeString(x) "\\\\\\0" 0)
             )
             join
         )
