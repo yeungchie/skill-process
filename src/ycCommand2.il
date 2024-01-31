@@ -9,7 +9,11 @@ procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl"
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
-        when(result = apply('ycCommandList2 append(list(?join join ?type type) cmd))
+        when(result = apply('ycCommandList2
+                ?join join
+                ?type type
+                cmd
+            )
             output = if(type == 'all
                 foreach(mapcar x result
                     pairp(x) && buildString(x row) || x

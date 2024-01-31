@@ -9,7 +9,10 @@ procedure(ycCommand(\@key join(" ") row("\n") \@rest cmd "SSl")
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
-        when(result = apply('ycCommandList append(list(?join join) cmd))
+        when(result = apply('ycCommandList
+                ?join join
+                cmd
+            )
             buildString(result row)
         )
     )
