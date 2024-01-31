@@ -4,12 +4,25 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommand2(\@key row("") join(" ") type('std) chomp \@rest cmd "SSsgl")
+procedure(ycCommand2(
+      \@key
+        interval(30)
+        timeout(300)
+        row("")
+        join(" ")
+        type('std)
+        chomp
+      \@rest
+        cmd
+      "xxSSsgl"
+    )
     let((result output)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
         when(result = apply('ycCommandList2
+                ?interval interval
+                ?timeout timeout
                 ?join join
                 ?type type
                 cmd

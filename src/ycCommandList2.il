@@ -4,7 +4,16 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
+procedure(ycCommandList2(
+      \@key
+        interval(30)
+        timeout(300)
+        join(" ")
+        type('std)
+      \@rest
+        cmd
+      "xxSsl"
+    )
     let((cid stdout errout status)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
@@ -18,16 +27,16 @@ procedure(ycCommandList2(\@key join(" ") type('std) \@rest cmd "Ssl")
         cid = ipcBeginProcess(
             cmd
             ""
-            lambda((cid data)
+            lambda((_cid data)
                 stdout = cons(data stdout)
             )
-            lambda((cid data)
+            lambda((_cid data)
                 errout = cons(data errout)
             )
         )
-        ipcWait(cid)
+        ipcWait(cid interval timeout)
         when(ipcIsAliveProcess(cid)
-            ipcCloseProcess(cid)
+            ipcKillProcess(cid)
         )
         status = ipcGetExitStatus(cid)
         stdout = reverse(stdout)
