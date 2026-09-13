@@ -4,7 +4,10 @@
 ; Author   : YEUNGCHIE
 ;--------------------------
 
-ycLoadi("legacy/load.il")
-ycLoadi("subprocess/load.il")
+ycLoad("src/alias.il")
+ycLoad("src/ycCommand.il")
+ycLoad("src/ycCommandList.il")
+ycLoad("src/ycCommand2.il")
+ycLoad("src/ycCommandList2.il")
 
 ; END
