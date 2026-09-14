@@ -50,7 +50,7 @@ defmethod(initializeInstance \@before (obj(Stream) \@rest _args)
         obj->size = lambda(() length(car(obj->_data)))
     )
     unless(slotBoundp(obj 'isEmpty)
-        obj->isEmpty = lambda(() obj->size() == 0)
+        obj->isEmpty = lambda(() !car(obj->_data))
     )
     t
 )

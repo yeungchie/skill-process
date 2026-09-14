@@ -5,8 +5,8 @@ errset({
 procedure(runJob(cmd "t")  ; -> str
     let((aj done)
         aj = AsyncJob(cmd
-            ?handle lambda((htype aj)
-                case(htype
+            ?callback lambda((et aj)
+                case(et
                     (stdout
                         fprintf(poport "%s" aj->stdout->last())
                     )
@@ -26,8 +26,8 @@ procedure(runJob(cmd "t")  ; -> str
 )
 
 
-procedure(AsyncJob(cmd \@key handle "tg")  ; -> AsyncJob    
-    makeInstance('AsyncJob ?cmd cmd ?handle handle)
+procedure(AsyncJob(cmd \@key callback "tg")  ; -> AsyncJob
+    makeInstance('AsyncJob ?cmd cmd ?callback callback)
 )
 
 
@@ -36,9 +36,9 @@ defclass(AsyncJob () (
     cmd(
         \@initarg cmd
     )
-    handle(
-        \@initarg handle
-        \@initform lambda((handleType aj "sg") nil)  ; aj: AsyncJob
+    callback(
+        \@initarg callback
+        \@initform lambda((event_type async_job "sg") nil)
     )
 
     ; parameter
@@ -89,22 +89,22 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
             obj->ipcId = ipcBeginProcess(obj->cmd ""
                 lambda((cid data)
                     obj->stdout->push(data)
-                    when(obj->handle
-                        funcall(obj->handle 'stdout obj)
+                    when(obj->callback
+                        funcall(obj->callback 'stdout obj)
                     )
                     t
                 )
                 lambda((cid data)
                     obj->stderr->push(data)
-                    when(obj->handle
-                        funcall(obj->handle 'stderr obj)
+                    when(obj->callback
+                        funcall(obj->callback 'stderr obj)
                     )
                     t
                 )
                 lambda((cid code)
                     obj->returncode = code
-                    when(obj->handle
-                        funcall(obj->handle 'post obj)
+                    when(obj->callback
+                        funcall(obj->callback 'post obj)
                     )
                     t
                 )
