@@ -24,10 +24,14 @@ defmethod(initializeInstance \@before (obj(Stream) \@rest _args)
         obj->push = lambda((text "t") obj->_data = tconc(obj->_data text) t)
     )
     unless(slotBoundp(obj 'last)
-        obj->last = lambda(() car(obj->_data) && cadr(obj->_data))
+        obj->last = lambda(()
+            obj->isEmpty() && ipcSleep(0)
+            !obj->isEmpty() && cadr(obj->_data)
+        )
     )
     unless(slotBoundp(obj 'shift)
         obj->shift = lambda(()
+            obj->isEmpty() && ipcSleep(0)
             unless(obj->isEmpty()
                 prog1(
                     caar(obj->_data)
@@ -38,7 +42,8 @@ defmethod(initializeInstance \@before (obj(Stream) \@rest _args)
     )
     unless(slotBoundp(obj 'text)
         obj->text = lambda((\@key clear)
-            prog1(
+            obj->isEmpty() && ipcSleep(0)
+            obj->isEmpty() && "" || prog1(
                 buildString(car(obj->_data) "")
                 when(clear
                     obj->_data = nil

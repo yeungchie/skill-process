@@ -1,10 +1,12 @@
 useNamespace("ycSubProcess")
-errset({
 
 
-procedure(runJob(cmd "t")  ; -> str
-    let((aj done)
-        aj = AsyncJob(cmd
+procedure(runJob(arg \@rest args "gg")  ; -> str
+    let((aj)
+        aj = AsyncJob(
+            buildString(foreach(mapcar x cons(arg args)
+                stringp(x) && x || lsprintf("%A" x)
+            ))
             ?callback lambda((et aj)
                 case(et
                     (stdout
@@ -22,6 +24,16 @@ procedure(runJob(cmd "t")  ; -> str
             aj->returncode == 0
             aj->returncode || aj->kill()
         )
+    )
+)
+
+
+procedure(createJob(arg \@key callback \@rest args "ggl")  ; -> AsyncJob
+    AsyncJob(
+        buildString(foreach(mapcar x cons(arg args)
+            stringp(x) && x || lsprintf("%A" x)
+        ))
+        ?callback callback
     )
 )
 
@@ -190,7 +202,6 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
 )
 
 
-} t)
 unuseNamespace("ycSubProcess")
 
 ; END

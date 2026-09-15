@@ -1,15 +1,12 @@
 makeNamespace("ycSubProcess")
-errset({
-
 addToNamespace("ycSubProcess"
     mapcar('symbolToString '(
         Stream
         AsyncJob
         runJob
+        createJob
     ))
 )
-
-})
 unuseNamespace("ycSubProcess")
 
 ; END
