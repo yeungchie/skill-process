@@ -1,7 +1,7 @@
 useNamespace("ycSubProcess")
 
 
-procedure(runJob(arg \@rest args "gg")  ; -> str
+procedure(runJob(arg \@rest args "gg")  ; -> t | nil
     let((aj)
         aj = AsyncJob(
             buildString(foreach(mapcar x cons(arg args)
