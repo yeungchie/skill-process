@@ -8,31 +8,41 @@
 
 ---
 
-## runJob
+## ycSubProcess::runJob `function`
 
 同步执行命令并等待完成，输出内容直接打印到终端。
+返回 `t` 表示进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
 
-```lisp
-ycSubProcess::runJob(arg [args ...])
-=> t | nil
+```text
+ycSubProcess::runJob(
+    g_arg
+    [ g_args ... ]
+)
+=> t / nil
 ```
+
+### 参数
 
 | 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| arg | Any | 命令，非字符串会自动转换 |
-| ... | Any | 命令的其余部分 |
+| g_arg | Any | 命令，非字符串会自动转换 |
+| g_args | Any | 命令的其余部分 |
 
-返回 `t` 表示进程正常结束（returncode == 0），`nil` 表示执行失败（会自动终止进程）。
+### 例程
 
 ```lisp
 ycSubProcess::runJob("whoami")
 ; yeung
 ; => t
+```
 
+```lisp
 ycSubProcess::runJob("date")
 ; Tue Sep 15 22:50:10 CST 2026
 ; => t
+```
 
+```lisp
 ycSubProcess::runJob("bad cmd")
 ; sh: bad: command not found
 ; => nil
@@ -40,32 +50,44 @@ ycSubProcess::runJob("bad cmd")
 
 ---
 
-## createJob
+## ycSubProcess::createJob `function`
 
 创建异步任务对象，可通过回调函数处理输出。
 
-```lisp
-ycSubProcess::createJob(arg [args ...] [?callback funcobj])
+```text
+ycSubProcess::createJob(
+    g_arg
+    [ g_args ... ]
+    [ ?callback g_funcobj ]
+)
 => ycSubProcess::AsyncJob
 ```
 
-| 参数 | 类型 | 说明 |
+### 参数
+
+| 名称 | 类型 | 说明 |
 | --- | --- | --- |
-| arg | Any | 命令，非字符串会自动转换 |
-| ... | Any | 命令的其余部分 |
-| callback | funcobj | 可选，回调函数 |
+| g_arg | Any | 命令，非字符串会自动转换 |
+| g_args | Any | 命令的其余部分 |
+| ?callback g_funcobj | nil / symbol / funobj | 可选，回调函数 |
 
 回调函数签名：`callback(event_type, async_job)`
 
-| event_type | 触发时机 |
-| --- | --- |
-| `'stdout` | 标准输出有新数据 |
-| `'stderr` | 标准错误输出有新数据 |
-| `'post` | 进程执行结束 |
++ `event_type`指定事件类型。
+
+    | 有效值 | 触发时机 |
+    | --- | --- |
+    | `'stdout` | 标准输出有新数据 |
+    | `'stderr` | 标准错误输出有新数据 |
+    | `'post` | 进程执行结束 |
+
++ `async_job`为 `AsyncJob` 对象。
+
+### 例程
 
 ```lisp
 aj = ycSubProcess::createJob("free -h")
-; => <ycSubProcess::AsyncJob object; ...>
+; => <ycSubProcess::AsyncJob object; status=None, returncode=nil>
 
 printf("%s" aj->await())
 ;               total        used        free      shared  buff/cache   available
@@ -75,11 +97,9 @@ printf("%s" aj->await())
 
 ---
 
-## AsyncJob
+## ycSubProcess::AsyncJob `class`
 
 异步任务对象，用于控制和获取进程信息。
-
-> 使用 `->` 符号调用方法。
 
 ### 属性
 
@@ -87,48 +107,49 @@ printf("%s" aj->await())
 | --- | --- | --- |
 | cmd | string | 执行的命令 |
 | userData | Any | 可用于携带任意数据 |
-| callback | funcobj | 回调函数 |
-| ipcId | ipcId | 进程间通信 ID |
-| returncode | int | 进程退出状态码 |
-| stdout | Stream | 标准输出流 |
-| stderr | Stream | 标准错误输出流 |
+| callback | nil / symbol / funcobj | 特定事件触发的回调函数 |
+| ipcId | nil / ipcId | 进程间通信 ID，任务还未启动时的值为 `nil` |
+| returncode | nil / int | 进程退出状态码，任务还未启动时的值为 `nil` |
+| stdout | ycSubProcess::Stream | 标准输出流 |
+| stderr | ycSubProcess::Stream | 标准错误输出流 |
 
 ### 方法
 
-#### start
+> 必须使用 `->` 符号调用方法。
+
+#### start `method`
+
+```text
+aj->start()
+=> t / nil
+```
 
 启动进程。若已启动则报错。
 
 ```lisp
 aj = ycSubProcess::createJob("whoami")
 aj->start()
+; => t
 ```
 
-#### await
+#### print `method`
 
-自动启动并等待完成，返回标准输出内容。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| check | bool | nil | 是否检查返回码，非零时抛出错误 |
-
-```lisp
-output = aj->await()
-; => "yeung"
-
-; check 为真时，进程返回码非零会抛出错误
-output = aj->await(?check t)
+```text
+aj->print(
+    t_fmt
+    [ g_args ... ]
+    [ ?end t_string ]
+)
+=> t_string
 ```
-
-#### print
 
 向标准输入写入内容。
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| fmt | string | - | 格式化字符串 |
-| args | Any | - | 格式化参数 |
-| end | string | "\n" | 结尾字符 |
+| t_fmt | string | | 格式化字符串 |
+| g_args | Any | | 格式化参数 |
+| ?end t_string | string | `"\n"` | 结尾字符 |
 
 ```lisp
 aj->print("hello")
@@ -136,50 +157,128 @@ aj->print("line %d\n" 1)
 aj->print("no newline" ?end "")
 ```
 
-#### state
+#### wait `method`
 
-获取进程状态。
-
-```lisp
-aj->state()
-; => 'None    ; 未启动
-; => 'Active  ; 运行中
-; => 'Dead    ; 已结束
-; => 'Stopped ; 已暂停
+```text
+aj->wait(
+    [ x_timeout ]
+    [ x_interval ]
+)
+=> t / nil
 ```
-
-#### wait
 
 等待进程完成。
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| timeout | int | 1000000 | 超时时间（毫秒） |
-| interval | int | 30 | 轮询间隔（毫秒） |
+| x_timeout | int | 1000000 | 单位 **秒**，等待超时时间 |
+| x_interval | int | 30 | 单位 **秒**，提示信息打印时间间隔 |
 
-#### stop
+```lisp
+aj->wait()
+; => t
+```
 
-暂停进程，类似 Ctrl+Z。
+#### kill `method`
 
-#### continue
-
-继续执行已暂停的进程。
-
-#### close
-
-关闭标准输入通道。
-
-#### kill
+```text
+aj->kill()
+=> t / nil
+```
 
 终止进程。
 
-#### signal
+#### await `method`
+
+```text
+aj->await(
+    [ ?check g_enable ]
+)
+=> t_string
+```
+
+自动启动并等待完成，返回标准输出内容。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| ?check g_enable | bool | nil | 是否检查返回码，非零时抛出错误 |
+
+```lisp
+aj = ycSubProcess::createJob("whoami")
+aj->await()
+; => "yeung\n"
+```
+
+```lisp
+; check 为真时，进程返回码非零会抛出错误
+aj = ycSubProcess::createJob("whoamii")
+aj->await(?check t)
+; sh: whoamii: command not found
+; *Error* funcall: job failed, returncode is 127
+```
+
+#### state `method`
+
+```text
+aj->state()
+=> s_state
+```
+
+获取进程状态。
+
+```lisp
+aj->state()
+; => 'None
+```
+
+| 状态 | 说明 |
+| --- | --- |
+| `'None` | 未启动 |
+| `'Active` | 运行中 |
+| `'Dead` | 已结束 |
+| `'Stopped` | 已暂停 |
+
+#### stop `method`
+
+```text
+aj->stop()
+=> t / nil
+```
+
+暂停进程，类似 Ctrl+Z。
+
+#### continue `method`
+
+```text
+aj->continue()
+=> t / nil
+```
+
+继续执行已暂停的进程。
+
+#### close `method`
+
+```text
+aj->close()
+=> t / nil
+```
+
+关闭标准输入通道。
+
+#### signal `method`
+
+```text
+aj->signal(
+    s_signal
+)
+=> t / nil
+```
 
 发送信号。
 
-| 参数 | 类型 | 可选值 |
+| 参数 | 类型 | 有效值 |
 | --- | --- | --- |
-| signal | symbol | `'INT`、`'TERM`、`'QUIT`、`'KILL` |
+| s_signal | symbol | `'INT` / `'TERM` / `'QUIT` / `'KILL` |
 
 ```lisp
 aj->signal('INT)   ; 中断进程
@@ -190,13 +289,13 @@ aj->signal('KILL)  ; 强制终止进程
 
 ---
 
-## Stream
+## Stream `class`
 
-数据流对象，用于获取进程输出。
+一个 FIFO 数据流对象，用于获取进程输出。
 
 ### 方法
 
-#### text
+#### text `method`
 
 获取所有输出内容并拼接为字符串，空流时返回空字符串。
 
@@ -209,7 +308,7 @@ aj->stdout->text()            ; => "hello\nworld\n"
 aj->stdout->text(?clear t)    ; => "hello\nworld\n" 且清空
 ```
 
-#### size
+#### size `method`
 
 获取数据条数。
 
@@ -217,7 +316,7 @@ aj->stdout->text(?clear t)    ; => "hello\nworld\n" 且清空
 aj->stdout->size() ; => 2
 ```
 
-#### isEmpty
+#### isEmpty `method`
 
 判断是否为空。
 
@@ -225,7 +324,7 @@ aj->stdout->size() ; => 2
 aj->stdout->isEmpty() ; => nil
 ```
 
-#### last
+#### last `method`
 
 获取最后一条数据，无数据时返回 nil。
 
@@ -233,7 +332,7 @@ aj->stdout->isEmpty() ; => nil
 aj->stdout->last() ; => "world"
 ```
 
-#### shift
+#### shift `method`
 
 获取并移除第一条数据，无数据时返回 nil。
 
