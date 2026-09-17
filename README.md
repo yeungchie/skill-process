@@ -86,6 +86,7 @@ printf("%s" aj->await())
 | 名称 | 类型 | 说明 |
 | --- | --- | --- |
 | cmd | string | 执行的命令 |
+| userData | Any | 可用于携带任意数据 |
 | callback | funcobj | 回调函数 |
 | ipcId | ipcId | 进程间通信 ID |
 | returncode | int | 进程退出状态码 |

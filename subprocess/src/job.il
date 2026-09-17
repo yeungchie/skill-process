@@ -28,18 +28,23 @@ procedure(runJob(arg \@rest args "gg")  ; -> t | nil
 )
 
 
-procedure(createJob(arg \@key callback \@rest args "ggl")  ; -> AsyncJob
+procedure(createJob(arg \@key callback userData \@rest args "gggl")  ; -> AsyncJob
     AsyncJob(
         buildString(foreach(mapcar x cons(arg args)
             stringp(x) && x || lsprintf("%A" x)
         ))
-        ?callback callback
+        ?callback   callback
+        ?userData   userData
     )
 )
 
 
-procedure(AsyncJob(cmd \@key callback "tg")  ; -> AsyncJob
-    makeInstance('AsyncJob ?cmd cmd ?callback callback)
+procedure(AsyncJob(cmd \@key callback userData "tgg")  ; -> AsyncJob
+    makeInstance('AsyncJob
+        ?cmd        cmd
+        ?callback   callback
+        ?userData   userData
+    )
 )
 
 
@@ -51,6 +56,10 @@ defclass(AsyncJob () (
     callback(
         \@initarg callback
         \@initform lambda((event_type async_job "sg") nil)
+    )
+    userData(
+        \@initarg userData
+        \@initform nil
     )
 
     ; parameter
@@ -83,10 +92,9 @@ defclass(AsyncJob () (
 ))
 
 defmethod(printself (obj(AsyncJob))
-    lsprintf("<%A object; status=%A, ipcId=%A, returncode=%A>"
+    lsprintf("<%A object; status=%A, returncode=%A>"
         className(obj)
         obj->state()
-        obj->ipcId
         obj->returncode
     )
 )
