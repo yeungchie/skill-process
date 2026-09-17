@@ -10,10 +10,10 @@ procedure(runJob(arg \@rest args "gg")  ; -> t | nil
             ?callback lambda((et aj)
                 case(et
                     (stdout
-                        fprintf(poport "%s" aj->stdout->last())
+                        fprintf(IL::poport "%s" aj->stdout->last())
                     )
                     (stderr
-                        fprintf(errport "%s" aj->stderr->last())
+                        fprintf(IL::errport "%s" aj->stderr->last())
                     )
                 )
             )
@@ -197,7 +197,7 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
             when(check && (obj->returncode != 0)
                 let((info)
                     unless(blankstrp(info = obj->stderr->text())
-                        fprintf(errport "%s" info)
+                        fprintf(inSkill(IL::errport) "%s" info)
                     )
                 )
                 ycError("job failed, returncode is %d" obj->returncode)
