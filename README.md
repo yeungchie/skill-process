@@ -224,18 +224,18 @@ aj->continue()
 
 ```text
 aj->print(
-    t_fmt
+    t_formatString
     [ g_args ... ]
     [ ?end t_string ]
 )
-=> t_string
+=> t / nil
 ```
 
 向标准输入写入内容。
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| t_fmt | string | | 格式化字符串 |
+| t_formatString | string | | 格式化字符串 |
 | g_args | Any | | 格式化参数 |
 | ?end t_string | string | `"\n"` | 结尾字符 |
 
