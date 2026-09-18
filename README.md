@@ -1,6 +1,6 @@
 # skill-process
 
-外部进程执行命令功能的面向对象封装。
+进程间通信 (IPC) 功能的面向对象封装。
 
 ## 依赖
 
@@ -10,9 +10,6 @@
 
 ## ycSubProcess::runJob `function`
 
-同步执行命令并等待完成，输出内容直接打印到终端。
-返回 `t` 表示进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
-
 ```text
 ycSubProcess::runJob(
     g_arg
@@ -20,6 +17,9 @@ ycSubProcess::runJob(
 )
 => t / nil
 ```
+
+同步执行命令并等待完成，输出内容直接打印到终端。
+返回 `t` 表示任务进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
 
 ### 参数
 
@@ -52,8 +52,6 @@ ycSubProcess::runJob("bad cmd")
 
 ## ycSubProcess::createJob `function`
 
-创建异步任务对象，可通过回调函数处理输出。
-
 ```text
 ycSubProcess::createJob(
     g_arg
@@ -62,6 +60,8 @@ ycSubProcess::createJob(
 )
 => ycSubProcess::AsyncJob
 ```
+
+创建异步任务对象，可通过回调函数处理输出。
 
 ### 参数
 
@@ -79,7 +79,7 @@ ycSubProcess::createJob(
     | --- | --- |
     | `'stdout` | 标准输出有新数据 |
     | `'stderr` | 标准错误输出有新数据 |
-    | `'post` | 进程执行结束 |
+    | `'post` | 任务进程执行结束 |
 
 + `async_job`为 `AsyncJob` 对象。
 
@@ -99,7 +99,7 @@ printf("%s" aj->await())
 
 ## ycSubProcess::AsyncJob `class`
 
-异步任务对象，用于控制和获取进程信息。
+异步任务对象，用于控制和获取任务及进程信息。
 
 ### 属性
 
@@ -124,13 +124,101 @@ aj->start()
 => t / nil
 ```
 
-启动进程。若已启动则报错。
+运行任务，启动进程。若已启动则报错。
 
 ```lisp
 aj = ycSubProcess::createJob("whoami")
 aj->start()
 ; => t
 ```
+
+#### wait `method`
+
+```text
+aj->wait(
+    [ x_timeout ]
+    [ x_interval ]
+)
+=> t / nil
+```
+
+等待任务完成。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| x_timeout | int | 1000000 | 单位 **秒**，等待超时时间 |
+| x_interval | int | 30 | 单位 **秒**，提示信息打印时间间隔 |
+
+#### await `method`
+
+```text
+aj->await(
+    [ ?check g_enable ]
+)
+=> t_string
+```
+
+自动启动并等待完成，返回标准输出内容。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| ?check g_enable | bool | nil | 是否检查返回码，非零时抛出错误 |
+
+```lisp
+ycSubProcess::createJob("whoami")->await()
+; => "yeung\n"
+```
+
+设置 `?check t` 时，进程返回码非零会抛出错误。
+
+```lisp
+ycSubProcess::createJob("whoamii")->await(?check t)
+; sh: whoamii: command not found
+; *Error* funcall: job failed, returncode is 127
+```
+
+#### kill `method`
+
+```text
+aj->kill()
+=> t / nil
+```
+
+强制终止任务。
+
+#### state `method`
+
+```text
+aj->state()
+=> s_state
+```
+
+获取任务进程状态。
+
+| 状态 | 说明 |
+| --- | --- |
+| `'None` | 未启动 |
+| `'Active` | 运行中 |
+| `'Dead` | 已结束 |
+| `'Stopped` | 已暂停 |
+
+#### stop `method`
+
+```text
+aj->stop()
+=> t / nil
+```
+
+暂停任务，类似 Ctrl+Z。
+
+#### continue `method`
+
+```text
+aj->continue()
+=> t / nil
+```
+
+继续执行已暂停的任务。
 
 #### print `method`
 
@@ -152,109 +240,20 @@ aj->print(
 | ?end t_string | string | `"\n"` | 结尾字符 |
 
 ```lisp
-aj->print("hello")
-aj->print("line %d\n" 1)
-aj->print("no newline" ?end "")
-```
-
-#### wait `method`
-
-```text
-aj->wait(
-    [ x_timeout ]
-    [ x_interval ]
-)
-=> t / nil
-```
-
-等待进程完成。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| x_timeout | int | 1000000 | 单位 **秒**，等待超时时间 |
-| x_interval | int | 30 | 单位 **秒**，提示信息打印时间间隔 |
-
-```lisp
-aj->wait()
+aj = ycSubProcess::createJob("cat")
+aj->start()
 ; => t
-```
 
-#### kill `method`
+aj->print("123")
+aj->stdout->text()
+; => "123\n"
 
-```text
-aj->kill()
-=> t / nil
-```
-
-终止进程。
-
-#### await `method`
-
-```text
-aj->await(
-    [ ?check g_enable ]
-)
-=> t_string
-```
-
-自动启动并等待完成，返回标准输出内容。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| ?check g_enable | bool | nil | 是否检查返回码，非零时抛出错误 |
-
-```lisp
-aj = ycSubProcess::createJob("whoami")
+aj->print("456")
+aj->print("789")
+aj->close()
 aj->await()
-; => "yeung\n"
+; => "123\n456\n789\n"
 ```
-
-```lisp
-; check 为真时，进程返回码非零会抛出错误
-aj = ycSubProcess::createJob("whoamii")
-aj->await(?check t)
-; sh: whoamii: command not found
-; *Error* funcall: job failed, returncode is 127
-```
-
-#### state `method`
-
-```text
-aj->state()
-=> s_state
-```
-
-获取进程状态。
-
-```lisp
-aj->state()
-; => 'None
-```
-
-| 状态 | 说明 |
-| --- | --- |
-| `'None` | 未启动 |
-| `'Active` | 运行中 |
-| `'Dead` | 已结束 |
-| `'Stopped` | 已暂停 |
-
-#### stop `method`
-
-```text
-aj->stop()
-=> t / nil
-```
-
-暂停进程，类似 Ctrl+Z。
-
-#### continue `method`
-
-```text
-aj->continue()
-=> t / nil
-```
-
-继续执行已暂停的进程。
 
 #### close `method`
 
@@ -263,7 +262,7 @@ aj->close()
 => t / nil
 ```
 
-关闭标准输入通道。
+关闭标准输入通道，类似 `Ctrl + D`。
 
 #### signal `method`
 
@@ -276,92 +275,79 @@ aj->signal(
 
 发送信号。
 
-| 参数 | 类型 | 有效值 |
+| 参数 | 类型 | 说明 |
 | --- | --- | --- |
-| s_signal | symbol | `'INT` / `'TERM` / `'QUIT` / `'KILL` |
+| s_signal | symbol | 向任务进程发送信号 |
 
-```lisp
-aj->signal('INT)   ; 中断进程
-aj->signal('TERM)  ; 终止进程
-aj->signal('QUIT)  ; 退出进程
-aj->signal('KILL)  ; 强制终止进程
-```
+| 有效值 | 说明 |
+| --- | --- |
+| `'INT` | 中断任务进程，类似 `Ctrl + C` |
+| `'QUIT` | 退出任务进程，类似 `Ctrl + \` |
+| `'TERM` | 终止任务进程， 类似 `kill -15 PID` |
+| `'KILL` | 强制终止任务进程，类似 `kill -9 PID` |
 
 ---
 
 ## Stream `class`
 
-一个 FIFO 数据流对象，用于获取进程输出。
+一个 FIFO 数据流对象，用于获取任务进程输出。
 
 ### 方法
 
 #### text `method`
 
+```text
+aj->stdout->text(
+    [ ?clear g_enable ]
+)
+=> t_string
+```
+
 获取所有输出内容并拼接为字符串，空流时返回空字符串。
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| clear | bool | nil | 获取后是否清空数据流 |
+| ?clear g_enable | bool | nil | 获取后是否清空数据流 |
 
 ```lisp
-aj->stdout->text()            ; => "hello\nworld\n"
-aj->stdout->text(?clear t)    ; => "hello\nworld\n" 且清空
+aj->stdout->text()
+; => "hello world\n"
 ```
 
 #### size `method`
 
-获取数据条数。
-
-```lisp
-aj->stdout->size() ; => 2
+```text
+aj->stdout->size()
+=> x_number
 ```
+
+获取数据流中数据数量。
 
 #### isEmpty `method`
 
-判断是否为空。
-
-```lisp
-aj->stdout->isEmpty() ; => nil
+```text
+aj->stdout->isEmpty()
+=> t / nil
 ```
+
+判断数据是否为空。
 
 #### last `method`
 
-获取最后一条数据，无数据时返回 nil。
-
-```lisp
-aj->stdout->last() ; => "world"
+```text
+aj->stdout->last()
+=> t_string / nil
 ```
+
+获取最后一条数据，无数据时返回 nil。
 
 #### shift `method`
 
+```text
+aj->stdout->shift()
+=> t_string / nil
+```
+
 获取并移除第一条数据，无数据时返回 nil。
 
-```lisp
-aj->stdout->shift() ; => "hello"
-```
-
 ---
-
-## 示例
-
-```lisp
-; 同步执行
-ycSubProcess::runJob("echo hello")
-
-; 异步执行并获取输出
-aj = ycSubProcess::createJob("echo hello && echo world")
-output = aj->await()
-; => "hello\nworld\n"
-
-; 使用回调处理输出
-aj = ycSubProcess::createJob("ping -c 3 localhost"
-    lambda((et aj)
-        case(et
-            (stdout printf("OUT: %s" aj->stdout->last()))
-            (stderr printf("ERR: %s" aj->stderr->last()))
-        )
-    )
-)
-aj->start()
-aj->wait()
-```
