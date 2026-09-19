@@ -32,7 +32,7 @@
 
 ---
 
-## ycSubProcess::runJob `function`
+## ycSubProcess::runJob <sup>`function`</sup>
 
 ```text
 ycSubProcess::runJob(
@@ -74,7 +74,7 @@ ycSubProcess::runJob("bad cmd")
 
 ---
 
-## ycSubProcess::createJob `function`
+## ycSubProcess::createJob <sub>`function`</sub>
 
 ```text
 ycSubProcess::createJob(
@@ -123,7 +123,7 @@ printf("%s" aj->await())
 
 ---
 
-## ycSubProcess::AsyncJob `class`
+## ycSubProcess::AsyncJob <sub>`class`</sub>
 
 异步任务对象，用于控制和获取任务及进程信息。
 
@@ -144,7 +144,7 @@ printf("%s" aj->await())
 
 > 必须使用 `->` 符号调用方法。
 
-#### start `method`
+#### start <sub>`method`</sub>
 
 ```text
 aj->start()
@@ -159,7 +159,7 @@ aj->start()
 ; => t
 ```
 
-#### wait `method`
+#### wait <sub>`method`</sub>
 
 ```text
 aj->wait(
@@ -176,7 +176,7 @@ aj->wait(
 | x_timeout | int | 1000000 | 单位 **秒**，等待超时时间 |
 | x_interval | int | 30 | 单位 **秒**，提示信息打印时间间隔 |
 
-#### await `method`
+#### await <sub>`method`</sub>
 
 ```text
 aj->await(
@@ -204,7 +204,7 @@ ycSubProcess::createJob("whoamii")->await(?check t)
 ; *Error* funcall: job failed, returncode is 127
 ```
 
-#### kill `method`
+#### kill <sub>`method`</sub>
 
 ```text
 aj->kill()
@@ -213,7 +213,7 @@ aj->kill()
 
 强制终止任务。
 
-#### state `method`
+#### state <sub>`method`</sub>
 
 ```text
 aj->state()
@@ -229,7 +229,7 @@ aj->state()
 | `'Dead` | 已结束 |
 | `'Stopped` | 已暂停 |
 
-#### stop `method`
+#### stop <sub>`method`</sub>
 
 ```text
 aj->stop()
@@ -238,7 +238,7 @@ aj->stop()
 
 暂停任务，类似 Ctrl+Z。
 
-#### continue `method`
+#### continue <sub>`method`</sub>
 
 ```text
 aj->continue()
@@ -247,7 +247,7 @@ aj->continue()
 
 继续执行已暂停的任务。
 
-#### print `method`
+#### print <sub>`method`</sub>
 
 ```text
 aj->print(
@@ -282,7 +282,7 @@ aj->await()
 ; => "123\n456\n789\n"
 ```
 
-#### close `method`
+#### close <sub>`method`</sub>
 
 ```text
 aj->close()
@@ -291,7 +291,7 @@ aj->close()
 
 关闭标准输入通道，类似 `Ctrl + D`。
 
-#### signal `method`
+#### signal <sub>`method`</sub>
 
 ```text
 aj->signal(
@@ -315,13 +315,13 @@ aj->signal(
 
 ---
 
-## Stream `class`
+## Stream <sub>`class`</sub>
 
 一个 FIFO 数据流对象，用于获取任务进程输出。
 
 ### 方法
 
-#### text `method`
+#### text <sub>`method`</sub>
 
 ```text
 aj->stdout->text(
@@ -341,7 +341,7 @@ aj->stdout->text()
 ; => "hello world\n"
 ```
 
-#### size `method`
+#### size <sub>`method`</sub>
 
 ```text
 aj->stdout->size()
@@ -350,7 +350,7 @@ aj->stdout->size()
 
 获取数据流中数据数量。
 
-#### isEmpty `method`
+#### isEmpty <sub>`method`</sub>
 
 ```text
 aj->stdout->isEmpty()
@@ -359,7 +359,7 @@ aj->stdout->isEmpty()
 
 判断数据是否为空。
 
-#### last `method`
+#### last <sub>`method`</sub>
 
 ```text
 aj->stdout->last()
@@ -368,7 +368,7 @@ aj->stdout->last()
 
 获取最后一条数据，无数据时返回 nil。
 
-#### shift `method`
+#### shift <sub>`method`</sub>
 
 ```text
 aj->stdout->shift()
