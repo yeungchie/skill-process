@@ -18,15 +18,15 @@ ycSubProcess::runJob(
 => t / nil
 ```
 
-同步执行命令并等待完成，输出内容直接打印到终端。
+执行给定命令并等待任务完成，子进程输出内容将实时打印。
 返回 `t` 表示任务进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
 
 ### 参数
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| g_arg | Any | 命令，非字符串会自动转换 |
-| g_args | Any | 命令的其余部分 |
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| g_arg | Any | | 命令，非字符串会自动转换 |
+| g_args | Any | | 命令的其余部分 |
 
 ### 例程
 
@@ -57,6 +57,7 @@ ycSubProcess::createJob(
     g_arg
     [ g_args ... ]
     [ ?callback g_funcobj ]
+    [ ?verbose g_enable ]
 )
 => ycSubProcess::AsyncJob
 ```
@@ -65,11 +66,12 @@ ycSubProcess::createJob(
 
 ### 参数
 
-| 名称 | 类型 | 说明 |
-| --- | --- | --- |
-| g_arg | Any | 命令，非字符串会自动转换 |
-| g_args | Any | 命令的其余部分 |
-| ?callback g_funcobj | nil / symbol / funobj | 可选，回调函数 |
+| 名称 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| g_arg | Any | | 命令，非字符串会自动转换 |
+| g_args | Any | | 命令的其余部分 |
+| ?callback g_funcobj | nil / symbol / funobj | nil | 可选，回调函数 |
+| ?verbose g_enable | nil / t | nil | 可选，控制是否实时打印子进程输出 |
 
 回调函数签名：`callback(event_type, async_job)`
 
@@ -108,6 +110,7 @@ printf("%s" aj->await())
 | cmd | string | 执行的命令 |
 | userData | Any | 可用于携带任意数据 |
 | callback | nil / symbol / funcobj | 特定事件触发的回调函数 |
+| verbose | nil / t | 控制是否实时打印子进程输出 |
 | ipcId | nil / ipcId | 进程间通信 ID，任务还未启动时的值为 `nil` |
 | returncode | nil / int | 进程退出状态码，任务还未启动时的值为 `nil` |
 | stdout | ycSubProcess::Stream | 标准输出流 |
