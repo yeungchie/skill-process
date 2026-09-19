@@ -3,23 +3,7 @@ useNamespace("ycSubProcess")
 
 procedure(runJob(g_arg \@rest g_args "gg")  ; -> t | nil
     let((aj)
-        aj = AsyncJob(
-            buildString(foreach(mapcar x cons(g_arg g_args)
-                stringp(x) && x || lsprintf("%A" x)
-            ))
-            ?callback lambda((et aj)
-                case(et
-                    (stdout
-                        fprintf(IL::poport "%s" aj->stdout->last())
-                    )
-                    (stderr
-                        fprintf(IL::errport "%s" aj->stderr->last())
-                    )
-                )
-            )
-        )
-        aj->start()
-        errset(aj->wait() t)
+        (aj = apply('createJob g_arg ?verbose t g_args))->await()
         prog1(
             aj->returncode == 0
             aj->returncode || aj->kill()
@@ -28,22 +12,24 @@ procedure(runJob(g_arg \@rest g_args "gg")  ; -> t | nil
 )
 
 
-procedure(createJob(g_arg \@key callback userData \@rest g_args "gggl")  ; -> AsyncJob
+procedure(createJob(g_arg \@key callback userData verbose \@rest g_args "ggggl")  ; -> AsyncJob
     AsyncJob(
         buildString(foreach(mapcar x cons(g_arg g_args)
             stringp(x) && x || lsprintf("%A" x)
         ))
         ?callback   callback
         ?userData   userData
+        ?verbose    verbose
     )
 )
 
 
-procedure(AsyncJob(t_cmd \@key callback userData "tgg")  ; -> AsyncJob
+procedure(AsyncJob(t_cmd \@key callback userData verbose "tggg")  ; -> AsyncJob
     makeInstance('AsyncJob
         ?cmd        t_cmd
         ?callback   callback
         ?userData   userData
+        ?verbose    verbose && t
     )
 )
 
@@ -59,6 +45,10 @@ defclass(AsyncJob () (
     )
     userData(
         \@initarg userData
+        \@initform nil
+    )
+    verbose(
+        \@initarg verbose
         \@initform nil
     )
 
@@ -113,6 +103,9 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
             obj->ipcId = ipcBeginProcess(obj->cmd ""
                 lambda((cid data)
                     obj->stdout->push(data)
+                    when(obj->verbose
+                        fprintf(inSkill(IL::stdout) "%s" data)
+                    )
                     when(obj->callback
                         funcall(obj->callback 'stdout obj)
                     )
@@ -120,6 +113,9 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
                 )
                 lambda((cid data)
                     obj->stderr->push(data)
+                    when(obj->verbose
+                        fprintf(inSkill(IL::stderr) "%s" data)
+                    )
                     when(obj->callback
                         funcall(obj->callback 'stderr obj)
                     )
@@ -154,7 +150,7 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
             when(check && (obj->returncode != 0)
                 let((info)
                     unless(blankstrp(info = obj->stderr->text())
-                        fprintf(inSkill(IL::errport) "%s" info)
+                        fprintf(inSkill(IL::stderr) "%s" info)
                     )
                 )
                 obj->_error("job failed, returncode is %d"
