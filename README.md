@@ -32,7 +32,7 @@
 
 ---
 
-## ycSubProcess::runJob <sup>`function`</sup>
+## ycSubProcess::runJob <sub>`function`</sub>
 
 ```text
 ycSubProcess::runJob(
