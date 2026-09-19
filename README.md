@@ -5,6 +5,7 @@
 ## 安装
 
 + skill-loader
+
     依赖 [skill-loader](https://github.com/yeungchie/skill-loader)，已安装可以跳过。
 
     ```sh
