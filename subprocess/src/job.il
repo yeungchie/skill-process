@@ -89,6 +89,7 @@ defclass(AsyncJob () (
     print()     ; write to stdin
     close()     ; close input channel
     signal()    ; send signal: 'INT 'TERM 'QUIT 'KILL
+    _error()
 ))
 
 defmethod(printself (obj(AsyncJob))
@@ -104,7 +105,10 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
     unless(slotBoundp(obj 'start)
         obj->start = lambda(()  ; -> t | nil
             when(obj->ipcId
-                ycError("job already started - %A" obj)
+                obj->_error("job already started, current status is '%s"
+                    obj->state()
+                    ?method 'start
+                )
             )
             obj->ipcId = ipcBeginProcess(obj->cmd ""
                 lambda((cid data)
@@ -153,7 +157,10 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
                         fprintf(inSkill(IL::errport) "%s" info)
                     )
                 )
-                ycError("job failed, returncode is %d" obj->returncode)
+                obj->_error("job failed, returncode is %d"
+                    obj->returncode
+                    ?method 'await
+                )
             )
             obj->stdout->text()
         )
@@ -204,6 +211,15 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
         obj->signal = lambda((s_signal "s")  ; -> t | nil
             when(obj->ipcId
                 ipcSignalProcess(obj->ipcId s_signal)
+            )
+        )
+    )
+    unless(slotBoundp(obj '_error)
+        obj->_error = lambda((t_formatString \@key method \@rest g_args "tgl")
+            error("%A%s: %s"
+                className(obj)
+                method && lsprintf(strcat("->" stringp(method) && "%s" || "%A") method) || ""
+                apply('lsprintf t_formatString g_args)
             )
         )
     )
