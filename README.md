@@ -2,9 +2,32 @@
 
 进程间通信 (IPC) 功能的面向对象封装。
 
-## 依赖
+## 安装
 
-[skill-loader](https://github.com/yeungchie/skill-loader)
++ skill-loader
+    依赖 [skill-loader](https://github.com/yeungchie/skill-loader)，已安装可以跳过。
+
+    ```sh
+    git clone --depth=1 https://github.com/yeungchie/skill-loader.git
+    ```
+
+    在 `.cdsinit` 文件中追加：
+
+    ```lisp
+    load("<path-to-dir>/skill-loader/load.il")
+    ```
+
++ skill-process
+
+    ```sh
+    git clone --depth=1 https://github.com/yeungchie/skill-process.git
+    ```
+
+    在 `.cdsinit` 文件中追加：
+
+    ```lisp
+    load("<path-to-dir>/skill-process/load.il")
+    ```
 
 ---
 
