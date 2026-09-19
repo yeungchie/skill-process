@@ -1,10 +1,10 @@
 useNamespace("ycSubProcess")
 
 
-procedure(runJob(arg \@rest args "gg")  ; -> t | nil
+procedure(runJob(g_arg \@rest g_args "gg")  ; -> t | nil
     let((aj)
         aj = AsyncJob(
-            buildString(foreach(mapcar x cons(arg args)
+            buildString(foreach(mapcar x cons(g_arg g_args)
                 stringp(x) && x || lsprintf("%A" x)
             ))
             ?callback lambda((et aj)
@@ -28,9 +28,9 @@ procedure(runJob(arg \@rest args "gg")  ; -> t | nil
 )
 
 
-procedure(createJob(arg \@key callback userData \@rest args "gggl")  ; -> AsyncJob
+procedure(createJob(g_arg \@key callback userData \@rest g_args "gggl")  ; -> AsyncJob
     AsyncJob(
-        buildString(foreach(mapcar x cons(arg args)
+        buildString(foreach(mapcar x cons(g_arg g_args)
             stringp(x) && x || lsprintf("%A" x)
         ))
         ?callback   callback
@@ -39,9 +39,9 @@ procedure(createJob(arg \@key callback userData \@rest args "gggl")  ; -> AsyncJ
 )
 
 
-procedure(AsyncJob(cmd \@key callback userData "tgg")  ; -> AsyncJob
+procedure(AsyncJob(t_cmd \@key callback userData "tgg")  ; -> AsyncJob
     makeInstance('AsyncJob
-        ?cmd        cmd
+        ?cmd        t_cmd
         ?callback   callback
         ?userData   userData
     )
