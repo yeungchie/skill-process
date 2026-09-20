@@ -313,6 +313,21 @@ aj->signal(
 | `'TERM` | 终止任务进程， 类似 `kill -15 PID` |
 | `'KILL` | 强制终止任务进程，类似 `kill -9 PID` |
 
+#### sleep <sub>`method`</sub>
+
+```text
+aj->sleep(
+    [ n_second ]
+)
+=> t
+```
+
+控制父进程休眠，单位秒。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| n_second | int / float | 0 | 单位 **秒** |
+
 ---
 
 ## Stream <sub>`class`</sub>

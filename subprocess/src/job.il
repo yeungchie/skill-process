@@ -79,7 +79,7 @@ defclass(AsyncJob () (
     print()     ; write to stdin
     close()     ; close input channel
     signal()    ; send signal: 'INT 'TERM 'QUIT 'KILL
-    _error()
+    sleep()     ; causes the parent process to be delayed
 ))
 
 defmethod(printself (obj(AsyncJob))
@@ -90,12 +90,18 @@ defmethod(printself (obj(AsyncJob))
     )
 )
 
-inScheme(
-defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
+inScheme(defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args) let((_error)
+    _error = lambda((t_formatString \@key method \@rest g_args "tgl")
+        error("%A%s: %s"
+            className(obj)
+            method && lsprintf(strcat("->" stringp(method) && "%s" || "%A") method) || ""
+            apply('lsprintf t_formatString g_args)
+        )
+    )
     unless(slotBoundp(obj 'start)
         obj->start = lambda(()  ; -> t | nil
             when(obj->ipcId
-                obj->_error("job already started, current status is '%s"
+                _error("job already started, current status is '%s"
                     obj->state()
                     ?method 'start
                 )
@@ -153,7 +159,7 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
                         fprintf(inSkill(IL::stderr) "%s" info)
                     )
                 )
-                obj->_error("job failed, returncode is %d"
+                _error("job failed, returncode is %d"
                     obj->returncode
                     ?method 'await
                 )
@@ -210,18 +216,13 @@ defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args)
             )
         )
     )
-    unless(slotBoundp(obj '_error)
-        obj->_error = lambda((t_formatString \@key method \@rest g_args "tgl")
-            error("%A%s: %s"
-                className(obj)
-                method && lsprintf(strcat("->" stringp(method) && "%s" || "%A") method) || ""
-                apply('lsprintf t_formatString g_args)
-            )
+    unless(slotBoundp(obj 'sleep)
+        obj->sleep = lambda((\@optional n_second(0) "n")  ; -> t
+            ipcSleepMilli(fix2(n_second * 1e3))
         )
     )
     t
-)
-)
+)))
 
 
 unuseNamespace("ycSubProcess")
