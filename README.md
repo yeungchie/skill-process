@@ -105,7 +105,9 @@ ycSubProcess::createJob(
     | --- | --- |
     | `'stdout` | 标准输出有新数据 |
     | `'stderr` | 标准错误输出有新数据 |
-    | `'post` | 任务进程执行结束 |
+    | `'post` | 任务进程执行结束后 |
+    | `'beforeBegin` | 任务进程开始执行前 |
+    | `'afterBegin` | 任务进程开始执行后 |
 
 + `async_job`为 `AsyncJob` 对象。
 

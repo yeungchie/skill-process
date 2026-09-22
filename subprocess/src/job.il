@@ -106,6 +106,9 @@ inScheme(defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args) let(
                     ?method 'start
                 )
             )
+            when(obj->callback
+                funcall(obj->callback 'beforeBegin obj)
+            )
             obj->ipcId = ipcBeginProcess(obj->cmd ""
                 lambda((cid data)
                     obj->stdout->push(data)
@@ -136,6 +139,10 @@ inScheme(defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args) let(
                 )
             )
             ipcWaitForProcess(obj->ipcId)
+            when(obj->callback
+                funcall(obj->callback 'afterBegin obj)
+            )
+            t
         )
     )
     unless(slotBoundp(obj 'wait)
