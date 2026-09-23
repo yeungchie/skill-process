@@ -90,7 +90,15 @@ defmethod(printself (obj(AsyncJob))
     )
 )
 
-inScheme(defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args) let((_error)
+inScheme(let((rsrec rstring)
+
+rsrec = pcreCompile("[\"\\\\$]")
+
+rstring = lambda((s "t")  ; -> raw string
+    pcreReplace(rsrec s "\\\\\\0" 0)
+)
+
+defmethod(initializeInstance (obj(AsyncJob) \@rest _args) let((_error)
     _error = lambda((t_formatString \@key method \@rest g_args "tgl")
         error("%A%s: %s"
             className(obj)
@@ -98,138 +106,118 @@ inScheme(defmethod(initializeInstance \@before (obj(AsyncJob) \@rest _args) let(
             apply('lsprintf t_formatString g_args)
         )
     )
-    unless(slotBoundp(obj 'start)
-        obj->start = lambda(()  ; -> t | nil
-            when(obj->ipcId
-                _error("job already started, current status is '%s"
-                    obj->state()
-                    ?method 'start
+    obj->start = lambda(()  ; -> t | nil
+        when(obj->ipcId
+            _error("job already started, current status is '%s"
+                obj->state()
+                ?method 'start
+            )
+        )
+        when(obj->callback
+            funcall(obj->callback 'beforeBegin obj)
+        )
+        obj->ipcId = ipcBeginProcess(rstring(obj->cmd) ""
+            lambda((cid data)
+                obj->stdout->push(data)
+                when(obj->verbose
+                    fprintf(inSkill(IL::stdout) "%s" data)
+                )
+                when(obj->callback
+                    funcall(obj->callback 'stdout obj)
+                )
+                t
+            )
+            lambda((cid data)
+                obj->stderr->push(data)
+                when(obj->verbose
+                    fprintf(inSkill(IL::stderr) "%s" data)
+                )
+                when(obj->callback
+                    funcall(obj->callback 'stderr obj)
+                )
+                t
+            )
+            lambda((cid code)
+                obj->returncode = code
+                when(obj->callback
+                    funcall(obj->callback 'post obj)
+                )
+                t
+            )
+        )
+        ipcWaitForProcess(obj->ipcId)
+        when(obj->callback
+            funcall(obj->callback 'afterBegin obj)
+        )
+        t
+    )
+    obj->wait = lambda((\@optional x_timeout(1000000) x_interval(30) "xx")  ; -> t | nil
+        when(obj->ipcId
+            ipcWait(obj->ipcId x_interval x_timeout)
+        )
+    )
+    obj->await = lambda((\@key check)  ; -> string
+        unless(obj->ipcId
+            obj->start()
+        )
+        unless(obj->returncode
+            obj->wait()
+        )
+        when(check && (obj->returncode != 0)
+            let((info)
+                unless(blankstrp(info = obj->stderr->text())
+                    fprintf(inSkill(IL::stderr) "%s" info)
                 )
             )
-            when(obj->callback
-                funcall(obj->callback 'beforeBegin obj)
+            _error("job failed, returncode is %d"
+                obj->returncode
+                ?method 'await
             )
-            obj->ipcId = ipcBeginProcess(obj->cmd ""
-                lambda((cid data)
-                    obj->stdout->push(data)
-                    when(obj->verbose
-                        fprintf(inSkill(IL::stdout) "%s" data)
-                    )
-                    when(obj->callback
-                        funcall(obj->callback 'stdout obj)
-                    )
-                    t
-                )
-                lambda((cid data)
-                    obj->stderr->push(data)
-                    when(obj->verbose
-                        fprintf(inSkill(IL::stderr) "%s" data)
-                    )
-                    when(obj->callback
-                        funcall(obj->callback 'stderr obj)
-                    )
-                    t
-                )
-                lambda((cid code)
-                    obj->returncode = code
-                    when(obj->callback
-                        funcall(obj->callback 'post obj)
-                    )
-                    t
-                )
-            )
-            ipcWaitForProcess(obj->ipcId)
-            when(obj->callback
-                funcall(obj->callback 'afterBegin obj)
-            )
-            t
+        )
+        obj->stdout->text()
+    )
+    obj->kill = lambda(()  ; -> t / nil
+        when(obj->ipcId
+            ipcKillProcess(obj->ipcId)
         )
     )
-    unless(slotBoundp(obj 'wait)
-        obj->wait = lambda((\@optional x_timeout(1000000) x_interval(30) "xx")  ; -> t | nil
-            when(obj->ipcId
-                ipcWait(obj->ipcId x_interval x_timeout)
+    obj->state = lambda(()  ; -> 'None | 'Active | 'Dead | 'Stopped
+        obj->ipcId && obj->ipcId->state || 'None
+    )
+    obj->stop = lambda(()  ; -> t | nil
+        when(obj->ipcId
+            ipcStopProcess(obj->ipcId)
+        )
+    )
+    obj->continue = lambda(()  ; -> t | nil
+        when(obj->ipcId
+            ipcContProcess(obj->ipcId)
+        )
+    )
+    obj->print = lambda((t_formatString \@key end("\n") \@rest g_args "ttl")  ; -> t | nil
+        when(obj->ipcId
+            ipcWriteProcess(obj->ipcId
+                strcat(apply('lsprintf t_formatString g_args) end)
             )
         )
     )
-    unless(slotBoundp(obj 'await)
-        obj->await = lambda((\@key check)  ; -> string
-            unless(obj->ipcId
-                obj->start()
-            )
-            unless(obj->returncode
-                obj->wait()
-            )
-            when(check && (obj->returncode != 0)
-                let((info)
-                    unless(blankstrp(info = obj->stderr->text())
-                        fprintf(inSkill(IL::stderr) "%s" info)
-                    )
-                )
-                _error("job failed, returncode is %d"
-                    obj->returncode
-                    ?method 'await
-                )
-            )
-            obj->stdout->text()
+    obj->close = lambda(()  ; -> t | nil
+        when(obj->ipcId
+            ipcCloseProcess(obj->ipcId)
         )
     )
-    unless(slotBoundp(obj 'kill)
-        obj->kill = lambda(()  ; -> t / nil
-            when(obj->ipcId
-                ipcKillProcess(obj->ipcId)
-            )
+    obj->signal = lambda((s_signal "s")  ; -> t | nil
+        when(obj->ipcId
+            ipcSignalProcess(obj->ipcId s_signal)
         )
     )
-    unless(slotBoundp(obj 'state)
-        obj->state = lambda(()  ; -> 'None | 'Active | 'Dead | 'Stopped
-            obj->ipcId && obj->ipcId->state || 'None
-        )
-    )
-    unless(slotBoundp(obj 'stop)
-        obj->stop = lambda(()  ; -> t | nil
-            when(obj->ipcId
-                ipcStopProcess(obj->ipcId)
-            )
-        )
-    )
-    unless(slotBoundp(obj 'continue)
-        obj->continue = lambda(()  ; -> t | nil
-            when(obj->ipcId
-                ipcContProcess(obj->ipcId)
-            )
-        )
-    )
-    unless(slotBoundp(obj 'print)
-        obj->print = lambda((t_formatString \@key end("\n") \@rest g_args "ttl")  ; -> t | nil
-            when(obj->ipcId
-                ipcWriteProcess(obj->ipcId
-                    strcat(apply('lsprintf t_formatString g_args) end)
-                )
-            )
-        )
-    )
-    unless(slotBoundp(obj 'close)
-        obj->close = lambda(()  ; -> t | nil
-            when(obj->ipcId
-                ipcCloseProcess(obj->ipcId)
-            )
-        )
-    )
-    unless(slotBoundp(obj 'signal)
-        obj->signal = lambda((s_signal "s")  ; -> t | nil
-            when(obj->ipcId
-                ipcSignalProcess(obj->ipcId s_signal)
-            )
-        )
-    )
-    unless(slotBoundp(obj 'sleep)
-        obj->sleep = lambda((\@optional n_second(0) "n")  ; -> t
-            ipcSleepMilli(fix2(n_second * 1e3))
-        )
+    obj->sleep = lambda((\@optional n_second(0) "n")  ; -> t
+        ipcSleepMilli(fix2(n_second * 1e3))
     )
     t
-)))
+))
+
+))
 
 
 unuseNamespace("ycSubProcess")
