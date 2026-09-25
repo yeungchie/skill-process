@@ -43,6 +43,7 @@ ycSubProcess::runJob(
 ```
 
 执行给定命令并等待任务完成，子进程输出内容将实时打印。
+
 返回 `t` 表示任务进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
 
 ### 参数
@@ -150,7 +151,7 @@ printf("%s" aj->await())
 
 ```text
 aj->start()
-=> t / nil
+=> ycSubProcess::AsyncJob
 ```
 
 运行任务，启动进程。若已启动则报错。
@@ -158,7 +159,7 @@ aj->start()
 ```lisp
 aj = ycSubProcess::createJob("whoami")
 aj->start()
-; => t
+; => <ycSubProcess::AsyncJob object; status=Active, returncode=nil>
 ```
 
 #### wait <sub>`method`</sub>
@@ -168,7 +169,7 @@ aj->wait(
     [ x_timeout ]
     [ x_interval ]
 )
-=> t / nil
+=> ycSubProcess::AsyncJob
 ```
 
 等待任务完成。
@@ -257,7 +258,7 @@ aj->print(
     [ g_args ... ]
     [ ?end t_string ]
 )
-=> t / nil
+=> ycSubProcess::AsyncJob
 ```
 
 向标准输入写入内容。
@@ -321,7 +322,7 @@ aj->signal(
 aj->sleep(
     [ n_second ]
 )
-=> t
+=> ycSubProcess::AsyncJob
 ```
 
 控制父进程休眠，单位秒。
@@ -331,6 +332,23 @@ aj->sleep(
 | n_second | int / float | 0 | 单位 **秒** |
 
 ---
+
+### 方法链
+
+以下方法支持链式调用。
+
++ `start`
++ `print`
++ `wait`
++ `sleep`
+
+```lisp
+ycSubProcess::createJob("python3 -i")\
+    ->start()\
+    ->print("print('hello world')")\
+    ->print("exit()")\
+    ->await()
+```
 
 ## Stream <sub>`class`</sub>
 

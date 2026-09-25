@@ -2,9 +2,6 @@ useNamespace("ycSubProcess")
 
 
 defclass(Stream () (
-    _data(
-        \@initform nil
-    )
     push()  ; -> t
     last()  ; -> str | nil
     shift()  ; -> str | nil
@@ -13,43 +10,43 @@ defclass(Stream () (
     isEmpty()  ; -> t | nil
 ))
 
-defmethod(printself (obj(Stream))
-    lsprintf("<%A object; size=%d>" className(obj) obj->size())
+defmethod(printself (self(Stream))
+    lsprintf("<%A object; size=%d>" className(self) self->size())
 )
 
 inScheme(
-defmethod(initializeInstance (obj(Stream) \@rest _args)
-    obj->push = lambda((text "t")
-        obj->_data = tconc(obj->_data text)
+defmethod(initializeInstance (self(Stream) \@rest _args) let((_data)
+    self->push = lambda((text "t")
+        _data = tconc(_data text)
         t
     )
-    obj->last = lambda(()
-        !obj->isEmpty() && cadr(obj->_data)
+    self->last = lambda(()
+        !self->isEmpty() && cadr(_data)
     )
-    obj->shift = lambda(()
-        unless(obj->isEmpty()
+    self->shift = lambda(()
+        unless(self->isEmpty()
             prog1(
-                caar(obj->_data)
-                car(obj->_data) := cdar(obj->_data)
+                caar(_data)
+                car(_data) := cdar(_data)
             )
         )
     )
-    obj->text = lambda((\@key clear)
-        obj->isEmpty() && "" || prog1(
-            buildString(car(obj->_data) "")
+    self->text = lambda((\@key clear)
+        self->isEmpty() && "" || prog1(
+            buildString(car(_data) "")
             when(clear
-                obj->_data = nil
+                _data = nil
             )
         )
     )
-    obj->size = lambda(()
-        length(car(obj->_data))
+    self->size = lambda(()
+        length(car(_data))
     )
-    obj->isEmpty = lambda(()
-        !car(obj->_data)
+    self->isEmpty = lambda(()
+        !car(_data)
     )
     t
-)
+))
 )
 
 

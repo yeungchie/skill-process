@@ -82,11 +82,11 @@ defclass(AsyncJob () (
     sleep()     ; causes the parent process to be delayed
 ))
 
-defmethod(printself (obj(AsyncJob))
+defmethod(printself (self(AsyncJob))
     lsprintf("<%A object; status=%A, returncode=%A>"
-        className(obj)
-        obj->state()
-        obj->returncode
+        className(self)
+        self->state()
+        self->returncode
     )
 )
 
@@ -98,124 +98,119 @@ rstring = lambda((s "t")  ; -> raw string
     pcreReplace(rsrec s "\\\\\\0" 0)
 )
 
-defmethod(initializeInstance (obj(AsyncJob) \@rest _args) let((_error)
-    _error = lambda((t_formatString \@key method \@rest g_args "tgl")
+defmethod(initializeInstance (self(AsyncJob) \@rest _args)
+    procedure(_error(t_formatString \@key method \@rest g_args "tgl")
         error("%A%s: %s"
-            className(obj)
+            className(self)
             method && lsprintf(strcat("->" stringp(method) && "%s" || "%A") method) || ""
             apply('lsprintf t_formatString g_args)
         )
     )
-    obj->start = lambda(()  ; -> t | nil
-        when(obj->ipcId
-            _error("job already started, current status is '%s"
-                obj->state()
-                ?method 'start
-            )
+    procedure(_checkStarted(\@optional method "g")
+        unless(self->ipcId
+            _error("job has not started, current status is '%s" self->state() ?method method)
         )
-        when(obj->callback
-            funcall(obj->callback 'beforeBegin obj)
+    )
+    self->start = lambda(()  ; -> self
+        when(self->ipcId
+            _error("job already started, current status is '%s" self->state() ?method 'start)
         )
-        obj->ipcId = ipcBeginProcess(rstring(obj->cmd) ""
+        when(self->callback
+            errset(funcall(self->callback 'beforeBegin self) t)
+        )
+        self->ipcId = ipcBeginProcess(rstring(self->cmd) ""
             lambda((cid data)
-                obj->stdout->push(data)
-                when(obj->verbose
+                self->stdout->push(data)
+                when(self->verbose
                     fprintf(inSkill(IL::stdout) "%s" data)
                 )
-                when(obj->callback
-                    funcall(obj->callback 'stdout obj)
+                when(self->callback
+                    funcall(self->callback 'stdout self)
                 )
-                t
             )
             lambda((cid data)
-                obj->stderr->push(data)
-                when(obj->verbose
+                self->stderr->push(data)
+                when(self->verbose
                     fprintf(inSkill(IL::stderr) "%s" data)
                 )
-                when(obj->callback
-                    funcall(obj->callback 'stderr obj)
+                when(self->callback
+                    funcall(self->callback 'stderr self)
                 )
-                t
             )
             lambda((cid code)
-                obj->returncode = code
-                when(obj->callback
-                    funcall(obj->callback 'post obj)
+                self->returncode = code
+                when(self->callback
+                    funcall(self->callback 'post self)
                 )
-                t
             )
         )
-        ipcWaitForProcess(obj->ipcId)
-        when(obj->callback
-            funcall(obj->callback 'afterBegin obj)
+        ipcWaitForProcess(self->ipcId)
+        when(self->callback
+            errset(funcall(self->callback 'afterBegin self) t)
         )
-        t
+        self
     )
-    obj->wait = lambda((\@optional x_timeout(1000000) x_interval(30) "xx")  ; -> t | nil
-        when(obj->ipcId
-            ipcWait(obj->ipcId x_interval x_timeout)
-        )
+    self->wait = lambda((\@optional x_timeout(1000000) x_interval(30) "xx")  ; -> self
+        _checkStarted('wait)
+        ipcWait(self->ipcId x_interval x_timeout)
+        self
     )
-    obj->await = lambda((\@key check)  ; -> string
-        unless(obj->ipcId
-            obj->start()
+    self->await = lambda((\@key check)  ; -> string
+        unless(self->ipcId
+            self->start()
         )
-        unless(obj->returncode
-            obj->wait()
+        unless(self->returncode
+            self->wait()
         )
-        when(check && (obj->returncode != 0)
+        when(check && (self->returncode != 0)
             let((info)
-                unless(blankstrp(info = obj->stderr->text())
+                unless(blankstrp(info = self->stderr->text())
                     fprintf(inSkill(IL::stderr) "%s" info)
                 )
             )
             _error("job failed, returncode is %d"
-                obj->returncode
+                self->returncode
                 ?method 'await
             )
         )
-        obj->stdout->text()
+        self->stdout->text()
     )
-    obj->kill = lambda(()  ; -> t / nil
-        when(obj->ipcId
-            ipcKillProcess(obj->ipcId)
-        )
+    self->kill = lambda(()  ; -> t / nil
+        _checkStarted('kill)
+        ipcKillProcess(self->ipcId)
     )
-    obj->state = lambda(()  ; -> 'None | 'Active | 'Dead | 'Stopped
-        obj->ipcId && obj->ipcId->state || 'None
+    self->state = lambda(()  ; -> 'None | 'Active | 'Dead | 'Stopped
+        self->ipcId && self->ipcId->state || 'None
     )
-    obj->stop = lambda(()  ; -> t | nil
-        when(obj->ipcId
-            ipcStopProcess(obj->ipcId)
-        )
+    self->stop = lambda(()  ; -> t | nil
+        _checkStarted('stop)
+        ipcStopProcess(self->ipcId)
     )
-    obj->continue = lambda(()  ; -> t | nil
-        when(obj->ipcId
-            ipcContProcess(obj->ipcId)
-        )
+    self->continue = lambda(()  ; -> t | nil
+        _checkStarted('continue)
+        ipcContProcess(self->ipcId)
     )
-    obj->print = lambda((t_formatString \@key end("\n") \@rest g_args "ttl")  ; -> t | nil
-        when(obj->ipcId
-            ipcWriteProcess(obj->ipcId
-                strcat(apply('lsprintf t_formatString g_args) end)
-            )
-        )
+    self->print = lambda((t_formatString \@key end("\n") \@rest g_args "ttl")  ; -> self
+        _checkStarted('print)
+        ipcWriteProcess(self->ipcId
+            strcat(apply('lsprintf t_formatString g_args) end)
+        ) || _error("job process has expired, current status is '%s" self->state() ?method 'print)
+        self
     )
-    obj->close = lambda(()  ; -> t | nil
-        when(obj->ipcId
-            ipcCloseProcess(obj->ipcId)
-        )
+    self->close = lambda(()  ; -> t | nil
+        _checkStarted('close)
+        ipcCloseProcess(self->ipcId)
     )
-    obj->signal = lambda((s_signal "s")  ; -> t | nil
-        when(obj->ipcId
-            ipcSignalProcess(obj->ipcId s_signal)
-        )
+    self->signal = lambda((s_signal "s")  ; -> t | nil
+        _checkStarted('signal)
+        ipcSignalProcess(self->ipcId s_signal)
     )
-    obj->sleep = lambda((\@optional n_second(0) "n")  ; -> t
+    self->sleep = lambda((\@optional n_second(0) "n")  ; -> self
         ipcSleepMilli(fix2(n_second * 1e3))
+        self
     )
     t
-))
+)
 
 ))
 
