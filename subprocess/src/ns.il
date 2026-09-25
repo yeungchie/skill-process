@@ -5,6 +5,7 @@ addToNamespace("ycSubProcess"
         AsyncJob
         runJob
         createJob
+        Elapsed
     ))
 )
 unuseNamespace("ycSubProcess")

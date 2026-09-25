@@ -54,10 +54,13 @@ defclass(AsyncJob () (
 
     ; parameter
     ipcId(
-        \@initform nil
+        \@initform nil  ; ipcId
     )
     returncode(
-        \@initform nil
+        \@initform nil  ; int
+    )
+    elapsed(
+        \@initform makeInstance('Elapsed)
     )
 
     ; stram
@@ -90,12 +93,12 @@ defmethod(printself (self(AsyncJob))
     )
 )
 
-inScheme(let((rsrec rstring)
+inScheme(let((_rsrec)
 
-rsrec = pcreCompile("[\"\\\\$]")
+_rsrec = pcreCompile("[\"\\\\$]")
 
-rstring = lambda((s "t")  ; -> raw string
-    pcreReplace(rsrec s "\\\\\\0" 0)
+procedure(_rstring(s "t")  ; -> raw string
+    pcreReplace(_rsrec s "\\\\\\0" 0)
 )
 
 defmethod(initializeInstance (self(AsyncJob) \@rest _args)
@@ -118,7 +121,7 @@ defmethod(initializeInstance (self(AsyncJob) \@rest _args)
         when(self->callback
             errset(funcall(self->callback 'beforeBegin self) t)
         )
-        self->ipcId = ipcBeginProcess(rstring(self->cmd) ""
+        self->ipcId = ipcBeginProcess(_rstring(self->cmd) ""
             lambda((cid data)
                 self->stdout->push(data)
                 when(self->verbose
@@ -139,11 +142,13 @@ defmethod(initializeInstance (self(AsyncJob) \@rest _args)
             )
             lambda((cid code)
                 self->returncode = code
+                self->elapsed->mark()
                 when(self->callback
                     funcall(self->callback 'post self)
                 )
             )
         )
+        self->elapsed->mark()
         ipcWaitForProcess(self->ipcId)
         when(self->callback
             errset(funcall(self->callback 'afterBegin self) t)
@@ -159,7 +164,7 @@ defmethod(initializeInstance (self(AsyncJob) \@rest _args)
         unless(self->ipcId
             self->start()
         )
-        unless(self->returncode
+        while(!self->returncode
             self->wait()
         )
         when(check && (self->returncode != 0)
