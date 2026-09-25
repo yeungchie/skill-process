@@ -4,19 +4,19 @@ let((aj)
     aj = ycSubProcess::createJob("python3 -iqu")
     errset({
         assert(aj->state() == 'None)
-        assert(aj->start() == t)
+        assert(aj->start() == aj)
         assert(aj->state() == 'Active)
 
-        assert(aj->print("print(123)") == t)
-        aj->sleep(0.2)
+        assert(aj->print("print(123)") == aj)
+        aj->wait(1)
         assert(aj->stdout->last() == "123\n")
 
-        assert(aj->print("print(456)") == t)
-        aj->sleep(0.2)
+        assert(aj->print("print(456)") == aj)
+        aj->wait(1)
         assert(aj->stdout->last() == "456\n")
 
-        assert(aj->print("print(789)") == t)
-        aj->sleep(0.2)
+        assert(aj->print("print(789)") == aj)
+        aj->wait(1)
         assert(aj->stdout->last() == "789\n")
 
         assert(aj->stdout->size() == 3)
