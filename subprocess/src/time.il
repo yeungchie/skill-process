@@ -2,14 +2,14 @@ useNamespace("ycSubProcess")
 
 
 defclass(Elapsed () (
-    mark()          ; -> t
-    getStart()      ; -> nil | string
-    getEnd()        ; -> nil | string
+    mark()          ; -> string | nil
+    getStart()      ; -> string | nil
+    getEnd()        ; -> string | nil
     getSeconds()    ; -> int
     humanReadable() ; -> string
 ))
 
-defmethod(printself (self(Elapsed)) let((st)
+defmethod(printself (self(Elapsed))
     lsprintf("<%A object; %A>"
         className(self)
         cond(
@@ -18,10 +18,10 @@ defmethod(printself (self(Elapsed)) let((st)
             (t                  "none")
         )
     )
-))
+)
 
 inScheme(
-defmethod(initializeInstance (self(Elapsed) \@rest _args) let((_start_ts _end_ts _second)
+defmethod(initializeInstance (self(Elapsed) \@rest _args) let((_start_ts _end_ts _second _humanReadable)
     procedure(_error(t_formatString \@key method \@rest g_args "tgl")
         error("%A%s: %s"
             className(self)
@@ -38,7 +38,6 @@ defmethod(initializeInstance (self(Elapsed) \@rest _args) let((_start_ts _end_ts
                 _end_ts = getCurrentTime()
             )
         )
-        t
     )
     self->getStart = lambda(()
         _start_ts
@@ -59,25 +58,44 @@ defmethod(initializeInstance (self(Elapsed) \@rest _args) let((_start_ts _end_ts
         _second
     )
     self->humanReadable = lambda(()
-        self->getSeconds()
-        cond(
-            (_second == 0
-                "~0s"
-            )
-            (_second < 60
-                lsprintf("%ds" _second)
-            )
-            (_second < 3600
-                lsprintf("%dm%2ds" _second/60 remainder(_second 60))
-            )
-            (t
-                lsprintf("%dh%2dm%2ds"
-                    _second/3600
-                    remainder(_second 3600)/60
-                    remainder(_second 60)
+        unless(_humanReadable
+            self->getSeconds()
+            _humanReadable = cond(
+                (_second == 0
+                    "~0s"
+                )
+                (_second < 60
+                    lsprintf("%ds" _second)
+                )
+                (_second < 3600
+                    let((s)
+                        lsprintf("%dm%s"
+                            _second/60
+                            if((s = remainder(_second 60)) == 0
+                                ""
+                                lsprintf("%ds" s)
+                            )
+                        )
+                    )
+                )
+                (t
+                    let((m s)
+                        lsprintf("%dh%s%s"
+                            _second/3600
+                            if((m = remainder(_second 3600)/60) == 0
+                                ""
+                                lsprintf("%dm" m)
+                            )
+                            if((s = remainder(_second 60)) == 0
+                                ""
+                                lsprintf("%ds" s)
+                            )
+                        )
+                    )
                 )
             )
         )
+        _humanReadable
     )
 ))
 )

@@ -142,6 +142,7 @@ printf("%s" aj->await())
 | returncode | nil / int | 进程退出状态码，任务还未启动时的值为 `nil` |
 | stdout | ycSubProcess::Stream | 标准输出流 |
 | stderr | ycSubProcess::Stream | 标准错误输出流 |
+| elapsed | ycSubProcess::Elapsed | 任务执行时间 |
 
 ### 方法
 
@@ -413,3 +414,108 @@ aj->stdout->shift()
 获取并移除第一条数据，无数据时返回 nil。
 
 ---
+
+## Elapsed <sub>`class`</sub>
+
+一个时间流逝对象，用于记录和计算任务进程执行时间。
+
+### 方法
+
+#### mark <sub>`method`</sub>
+
+```text
+aj->elapsed->mark()
+=> string | nil
+```
+
+标记时间点。
+
+前两次调用会返回当前时间，并依次记录为开始时间和结束时间，此后每次调用只会返回 `nil` 无实际效果。
+
+跟随 `AsyncJob` 使用时不需要手动执行，任务会在进程启动和结束时会自动记录。
+
+```lisp
+aj->elapsed->mark()
+; => "Sep 27 19:46:09 2026"
+
+aj->elapsed->mark()
+; => "Sep 27 19:46:10 2026"
+
+aj->elapsed->mark()
+; => nil
+```
+
+#### getStart <sub>`method`</sub>
+
+```text
+aj->elapsed->getStart()
+=> string | nil
+```
+
+获取开始时间。
+
+当开始时间未标记时返回 `nil`。
+
+```lisp
+aj->elapsed->getStart()
+; => "Sep 27 19:46:09 2026"
+```
+
+#### getEnd <sub>`method`</sub>
+
+```text
+aj->elapsed->getEnd()
+=> string | nil
+```
+
+获取结束时间。
+
+当结束时间未标记时返回 `nil`。
+
+```lisp
+aj->elapsed->getEnd()
+; => "Sep 27 19:46:10 2026"
+```
+
+#### getSeconds <sub>`method`</sub>
+
+```text
+aj->elapsed->getSeconds()
+=> int
+```
+
+获取流逝时间，单位 **秒**。
+
+当开始和结束时间未标记时会抛出错误。
+
+```lisp
+aj->elapsed->getSeconds()
+; => 1
+```
+
+#### humanReadable <sub>`method`</sub>
+
+```text
+aj->elapsed->humanReadable()
+=> string
+```
+
+以人类可读格式返回耗时信息。
+
+返回的格式有如下几种情况：
+
+| 耗时(s) | 示例 |
+| --- | --- |
+| 0 | `~0s` |
+| 1 | `1s` |
+| 60 | `1m` |
+| 61 | `1m1s` |
+| 3600 | `1h` |
+| 3601 | `1h1s` |
+| 3660 | `1h1m` |
+| 3661 | `1h1m1s` |
+
+```lisp
+aj->elapsed->humanReadable()
+; => "1s"
+```
