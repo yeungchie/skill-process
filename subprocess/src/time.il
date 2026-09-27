@@ -3,16 +3,20 @@ useNamespace("ycSubProcess")
 
 defclass(Elapsed () (
     mark()          ; -> t
-    state()         ; -> string
+    getStart()      ; -> nil | string
+    getEnd()        ; -> nil | string
     getSeconds()    ; -> int
     humanReadable() ; -> string
 ))
 
 defmethod(printself (self(Elapsed)) let((st)
-    st = self->state()
     lsprintf("<%A object; %A>"
         className(self)
-        if(st == "done" self->humanReadable() st)
+        cond(
+            (self->getEnd()     self->humanReadable())
+            (self->getStart()   "active")
+            (t                  "none")
+        )
     )
 ))
 
@@ -36,12 +40,11 @@ defmethod(initializeInstance (self(Elapsed) \@rest _args) let((_start_ts _end_ts
         )
         t
     )
-    self->state = lambda(()
-        cond(
-            (!_start_ts "unstarted")
-            (!_end_ts   "undone")
-            (t          "done")
-        )
+    self->getStart = lambda(()
+        _start_ts
+    )
+    self->getEnd = lambda(()
+        _end_ts
     )
     self->getSeconds = lambda(()
         unless(_second
