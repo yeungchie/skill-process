@@ -14,7 +14,7 @@ procedure(ycCommandList2(
         cmd
       "xxSsl"
     )
-    let((cid time waited stdout errout status)
+    let((cid stdout errout status)
         unless(cmd
             ycError("too few arguments - %A\n" cmd)
         )
@@ -34,17 +34,7 @@ procedure(ycCommandList2(
                 errout = cons(data errout)
             )
         )
-
-        time = getCurrentTime()
         ipcWait(cid interval timeout)
-        timeout += compareTime(time getCurrentTime())
-        ipcSignalProcess(cid 'TERM)
-        if(timeout > 0
-            ipcWait(cid interval timeout)
-            ipcSleepMilli(50)
-        )
-
-
         when(ipcIsAliveProcess(cid)
             ipcKillProcess(cid)
         )
