@@ -1,521 +1,128 @@
 # skill-process
 
-进程间通信 (IPC) 功能的面向对象封装。
+外部进程执行命令并接收返回值。
 
-## 安装
+## 项目依赖
 
-+ skill-loader
++ skill-loader [ [GitHub](https://github.com/yeungchie/skill-loader "https://github.com/yeungchie/skill-loader") ]
 
-    依赖 [skill-loader](https://github.com/yeungchie/skill-loader)，已安装可以跳过。
-
-    ```sh
-    git clone --depth=1 https://github.com/yeungchie/skill-loader.git
-    ```
-
-    在 `.cdsinit` 文件中追加：
-
-    ```lisp
-    load("<path-to-dir>/skill-loader/load.il")
-    ```
-
-+ skill-process
-
-    ```sh
-    git clone --depth=1 https://github.com/yeungchie/skill-process.git
-    ```
-
-    在 `.cdsinit` 文件中追加：
-
-    ```lisp
-    load("<path-to-dir>/skill-process/load.il")
-    ```
-
----
-
-## ycSubProcess::runJob <sub>`function`</sub>
+## cmd
 
 ```text
-ycSubProcess::runJob(
-    g_arg
-    [ g_args ... ]
+cmd(
+    g_cmd1
+    [ g_cmd2 ... ]
+    [ ?row  S_row ]
+    [ ?join  S_join ]
 )
-=> t / nil
 ```
 
-执行给定命令并等待任务完成，子进程输出内容将实时打印。
+> alias to `ycCommand`
 
-返回 `t` 表示任务进程正常结束；`nil` 表示执行失败，即进程返回状态码非零。
+调用内置 `artSystemWithRead` 函数，执行 Shell 语句，接受返回值。
 
-### 参数
+1. **g_cmd**
+    + 执行的 Shell 语句，非字符串会被转为字符串。
+    + 多个语句会用单空格 `" "` 拼接作为执行的语句。
+    + 类型限制：*all*
 
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| g_arg | Any | | 命令，非字符串会自动转换 |
-| g_args | Any | | 命令的其余部分 |
+2. `?row` **S_row**
+    + 指定字符串用于拼接多次获取到的结果。
+    + 由于 `cmd()` 无法获取到结尾的换行符，因此这个参数默认值设定为 `"\n"`。
+    + 非字符串会被转为字符串。
+    + 类型限制：*string, symbol*
 
-### 例程
+3. `?join` **S_join**
+    + 指定连接多个命令的拼接符。
+    + 类型限制：*string, symbol*
 
 ```lisp
-ycSubProcess::runJob("whoami")
-; yeung
-; => t
+cmd( "echo 123" )
+; => "123"
 ```
+
+存在缺陷：
+
++ 运行串行的组合命令，无法获取完整结果
 
 ```lisp
-ycSubProcess::runJob("date")
-; Tue Sep 15 22:50:10 CST 2026
-; => t
+cmd( "echo 123 && echo 456" )
+; => "456"
 ```
+
++ 返回结果不以换行符为结尾时存在 BUG，获取的返回结果有误
 
 ```lisp
-ycSubProcess::runJob("bad cmd")
-; sh: bad: command not found
-; => nil
+cmd( "echo -n 123" )
+; => "12"
 ```
 
----
-
-## ycSubProcess::createJob <sub>`function`</sub>
+## cmd2
 
 ```text
-ycSubProcess::createJob(
-    g_arg
-    [ g_args ... ]
-    [ ?callback g_funcobj ]
-    [ ?verbose g_enable ]
+cmd2(
+    g_cmd1
+    [ g_cmd2 ... ]
+    [ ?row  S_row ]
+    [ ?join  S_join ]
+    [ ?type  s_type ]
+    [ ?chomp  g_chomp ]
 )
-=> ycSubProcess::AsyncJob
 ```
 
-创建异步任务对象，可通过回调函数处理输出。
+> alias to `ycCommand2`
 
-### 参数
+调用 IPC 函数，解决上述 `cmd()` 中存在的问题，并支持标准输出和错误输出分离。
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| g_arg | Any | | 命令，非字符串会自动转换 |
-| g_args | Any | | 命令的其余部分 |
-| ?callback g_funcobj | nil / symbol / funobj | nil | 可选，回调函数 |
-| ?verbose g_enable | nil / t | nil | 可选，控制是否实时打印子进程输出 |
+1. **g_cmd**
+    + 执行的 Shell 语句，非字符串会被转为字符串。
+    + 多个语句会用单空格 `" "` 拼接作为执行的语句。
+    + 类型限制：*all*
 
-回调函数签名：`callback(event_type, async_job)`
+2. `?row` **S_row**
+    + 指定字符串用于拼接多次获取到的结果，默认值设定为空字符 `""`。
+    + 非字符串会被转为字符串。
+    + 类型限制：*string, symbol*
 
-+ `event_type`指定事件类型。
+3. `?join` **S_join**
+    + 指定连接多个命令的拼接符。
+    + 类型限制：*string, symbol*
 
-    | 有效值 | 触发时机 |
-    | --- | --- |
-    | `'stdout` | 标准输出有新数据 |
-    | `'stderr` | 标准错误输出有新数据 |
-    | `'post` | 任务进程执行结束后 |
-    | `'beforeBegin` | 任务进程开始执行前 |
-    | `'afterBegin` | 任务进程开始执行后 |
+4. `?type` **s_type**
+    + 指定需要获取的输出类型，默认为 `'std`，即获取标准输出。
+    + 指定 `'err` 则只获取错误输出。
+    + 指定 `'all` 则返回一个 *list* 包含所有输出。
+    + 类型限制：*symbol*
 
-+ `async_job`为 `AsyncJob` 对象。
+5. `?chomp` **g_chomp**
+    + 指定是否需要将每次获取的结果的行尾换行符移除。
+    + 默认为 `nil`。如果指定为非 `nil`，这移除行尾换行符。
+    + 类型限制：*all*
 
-### 例程
++ 可以获取都结尾的换行符
 
 ```lisp
-aj = ycSubProcess::createJob("free -h")
-; => <ycSubProcess::AsyncJob object; status=None, returncode=nil>
-
-printf("%s" aj->await())
-;               total        used        free      shared  buff/cache   available
-; Mem:            15G        1.6G        8.9G        140M        5.0G         13G
-; Swap:          4.0G          0B        4.0G
-```
-
----
-
-## ycSubProcess::AsyncJob <sub>`class`</sub>
-
-异步任务对象，用于控制和获取任务及进程信息。
-
-### 属性
-
-| 名称 | 类型 | 说明 |
-| --- | --- | --- |
-| cmd | string | 执行的命令 |
-| userData | Any | 可用于携带任意数据 |
-| callback | nil / symbol / funcobj | 特定事件触发的回调函数 |
-| verbose | nil / t | 控制是否实时打印子进程输出 |
-| ipcId | nil / ipcId | 进程间通信 ID，任务还未启动时的值为 `nil` |
-| returncode | nil / int | 进程退出状态码，任务还未启动时的值为 `nil` |
-| stdout | ycSubProcess::Stream | 标准输出流 |
-| stderr | ycSubProcess::Stream | 标准错误输出流 |
-| elapsed | ycSubProcess::Elapsed | 任务执行时间 |
-
-### 方法
-
-> 必须使用 `->` 符号调用方法。
-
-#### start <sub>`method`</sub>
-
-```text
-aj->start()
-=> ycSubProcess::AsyncJob
-```
-
-运行任务，启动进程。若已启动则报错。
-
-```lisp
-aj = ycSubProcess::createJob("whoami")
-aj->start()
-; => <ycSubProcess::AsyncJob object; status=Active, returncode=nil>
-```
-
-#### wait <sub>`method`</sub>
-
-```text
-aj->wait(
-    [ x_timeout ]
-    [ x_interval ]
-)
-=> ycSubProcess::AsyncJob
-```
-
-等待任务完成。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| x_timeout | int | 1000000 | 单位 **秒**，等待超时时间 |
-| x_interval | int | 30 | 单位 **秒**，提示信息打印时间间隔 |
-
-#### await <sub>`method`</sub>
-
-```text
-aj->await(
-    [ ?check g_enable ]
-)
-=> t_string
-```
-
-自动启动并等待完成，返回标准输出内容。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| ?check g_enable | bool | nil | 是否检查返回码，非零时抛出错误 |
-
-```lisp
-ycSubProcess::createJob("whoami")->await()
-; => "yeung\n"
-```
-
-设置 `?check t` 时，进程返回码非零会抛出错误。
-
-```lisp
-ycSubProcess::createJob("whoamii")->await(?check t)
-; sh: whoamii: command not found
-; *Error* funcall: job failed, returncode is 127
-```
-
-#### kill <sub>`method`</sub>
-
-```text
-aj->kill()
-=> t / nil
-```
-
-强制终止任务。
-
-#### state <sub>`method`</sub>
-
-```text
-aj->state()
-=> s_state
-```
-
-获取任务进程状态。
-
-| 状态 | 说明 |
-| --- | --- |
-| `'None` | 未启动 |
-| `'Active` | 运行中 |
-| `'Dead` | 已结束 |
-| `'Stopped` | 已暂停 |
-
-#### stop <sub>`method`</sub>
-
-```text
-aj->stop()
-=> t / nil
-```
-
-暂停任务，类似 Ctrl+Z。
-
-#### continue <sub>`method`</sub>
-
-```text
-aj->continue()
-=> t / nil
-```
-
-继续执行已暂停的任务。
-
-#### print <sub>`method`</sub>
-
-```text
-aj->print(
-    t_formatString
-    [ g_args ... ]
-    [ ?end t_string ]
-)
-=> ycSubProcess::AsyncJob
-```
-
-向标准输入写入内容。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| t_formatString | string | | 格式化字符串 |
-| g_args | Any | | 格式化参数 |
-| ?end t_string | string | `"\n"` | 结尾字符 |
-
-```lisp
-aj = ycSubProcess::createJob("cat")
-aj->start()
-; => t
-
-aj->print("123")
-aj->stdout->text()
+cmd2( "echo 123" )
 ; => "123\n"
-
-aj->print("456")
-aj->print("789")
-aj->close()
-aj->await()
-; => "123\n456\n789\n"
 ```
 
-#### close <sub>`method`</sub>
-
-```text
-aj->close()
-=> t / nil
-```
-
-关闭标准输入通道，类似 `Ctrl + D`。
-
-#### signal <sub>`method`</sub>
-
-```text
-aj->signal(
-    s_signal
-)
-=> t / nil
-```
-
-发送信号。
-
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| s_signal | symbol | 向任务进程发送信号 |
-
-| 有效值 | 说明 |
-| --- | --- |
-| `'INT` | 中断任务进程，类似 `Ctrl + C` |
-| `'QUIT` | 退出任务进程，类似 `Ctrl + \` |
-| `'TERM` | 终止任务进程， 类似 `kill -15 PID` |
-| `'KILL` | 强制终止任务进程，类似 `kill -9 PID` |
-
-#### sleep <sub>`method`</sub>
-
-```text
-aj->sleep(
-    [ n_second ]
-)
-=> ycSubProcess::AsyncJob
-```
-
-控制父进程休眠，单位秒。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| n_second | int / float | 0 | 单位 **秒** |
-
----
-
-### 方法链
-
-以下方法支持链式调用。
-
-+ `start`
-+ `print`
-+ `wait`
-+ `sleep`
++ 不以换行符结尾可以获取到完整结果
 
 ```lisp
-ycSubProcess::createJob("python3 -i")\
-    ->start()\
-    ->print("print('hello world')")\
-    ->print("exit()")\
-    ->await()
+cmd2( "echo -n 123" )
+; => "123"
 ```
 
-## Stream <sub>`class`</sub>
-
-一个 FIFO 数据流对象，用于获取任务进程输出。
-
-### 方法
-
-#### text <sub>`method`</sub>
-
-```text
-aj->stdout->text(
-    [ ?clear g_enable ]
-)
-=> t_string
-```
-
-获取所有输出内容并拼接为字符串，空流时返回空字符串。
-
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| ?clear g_enable | bool | nil | 获取后是否清空数据流 |
++ 运行串行命令可以获取到完整结果
 
 ```lisp
-aj->stdout->text()
-; => "hello world\n"
+cmd2( "echo 123 && echo 456" )
+; => "123\n456\n"
 ```
 
-#### size <sub>`method`</sub>
-
-```text
-aj->stdout->size()
-=> x_number
-```
-
-获取数据流中数据数量。
-
-#### isEmpty <sub>`method`</sub>
-
-```text
-aj->stdout->isEmpty()
-=> t / nil
-```
-
-判断数据是否为空。
-
-#### last <sub>`method`</sub>
-
-```text
-aj->stdout->last()
-=> t_string / nil
-```
-
-获取最后一条数据，无数据时返回 nil。
-
-#### shift <sub>`method`</sub>
-
-```text
-aj->stdout->shift()
-=> t_string / nil
-```
-
-获取并移除第一条数据，无数据时返回 nil。
-
----
-
-## Elapsed <sub>`class`</sub>
-
-一个时间流逝对象，用于记录和计算任务进程执行时间。
-
-### 方法
-
-#### mark <sub>`method`</sub>
-
-```text
-aj->elapsed->mark()
-=> string | nil
-```
-
-标记时间点。
-
-前两次调用会返回当前时间，并依次记录为开始时间和结束时间，此后每次调用只会返回 `nil` 无实际效果。
-
-跟随 `AsyncJob` 使用时不需要手动执行，任务会在进程启动和结束时会自动记录。
++ 分离标准输出和错误输出
 
 ```lisp
-aj->elapsed->mark()
-; => "Sep 27 19:46:09 2026"
-
-aj->elapsed->mark()
-; => "Sep 27 19:46:10 2026"
-
-aj->elapsed->mark()
-; => nil
-```
-
-#### getStart <sub>`method`</sub>
-
-```text
-aj->elapsed->getStart()
-=> string | nil
-```
-
-获取开始时间。
-
-当开始时间未标记时返回 `nil`。
-
-```lisp
-aj->elapsed->getStart()
-; => "Sep 27 19:46:09 2026"
-```
-
-#### getEnd <sub>`method`</sub>
-
-```text
-aj->elapsed->getEnd()
-=> string | nil
-```
-
-获取结束时间。
-
-当结束时间未标记时返回 `nil`。
-
-```lisp
-aj->elapsed->getEnd()
-; => "Sep 27 19:46:10 2026"
-```
-
-#### getSeconds <sub>`method`</sub>
-
-```text
-aj->elapsed->getSeconds()
-=> int
-```
-
-获取流逝时间，单位 **秒**。
-
-当开始和结束时间未标记时会抛出错误。
-
-```lisp
-aj->elapsed->getSeconds()
-; => 1
-```
-
-#### humanReadable <sub>`method`</sub>
-
-```text
-aj->elapsed->humanReadable()
-=> string
-```
-
-以人类可读格式返回耗时信息。
-
-返回的格式有如下几种情况：
-
-| 耗时(s) | 示例 |
-| --- | --- |
-| 0 | `~0s` |
-| 1 | `1s` |
-| 60 | `1m` |
-| 61 | `1m1s` |
-| 3600 | `1h` |
-| 3601 | `1h1s` |
-| 3660 | `1h1m` |
-| 3661 | `1h1m1s` |
-
-```lisp
-aj->elapsed->humanReadable()
-; => "1s"
+cmd2( "echo 123 ; echo 456 >&2" ?type 'all )
+; => ("123\n" "456\n")
 ```
